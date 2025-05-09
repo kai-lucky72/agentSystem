@@ -13,11 +13,13 @@ const PerformanceCharts = () => {
   // Chart references
   const attendanceChartRef = useRef(null);
   const reportChartRef = useRef(null);
+  const clientChartRef = useRef(null);
   const performanceTrendChartRef = useRef(null);
   
   // Chart instances
   const [attendanceChart, setAttendanceChart] = useState(null);
   const [reportCompletionChart, setReportCompletionChart] = useState(null);
+  const [clientChart, setClientChart] = useState(null);
   const [performanceTrendChart, setPerformanceTrendChart] = useState(null);
   
   // Filters
@@ -37,7 +39,7 @@ const PerformanceCharts = () => {
   
   // Function to get performance metrics organized by date
   const getPerformanceDataByDate = (records) => {
-    if (!records || records.length === 0) return { dates: [], attendance: [], reports: [] };
+    if (!records || records.length === 0) return { dates: [], attendance: [], reports: [], clients: [] };
     
     // Sort records by date
     const sortedRecords = [...records].sort((a, b) => {
@@ -59,7 +61,12 @@ const PerformanceCharts = () => {
       return metrics.report_completion || 0;
     });
     
-    return { dates, attendance, reports };
+    const clients = sortedRecords.map(record => {
+      const metrics = record.metrics || {};
+      return metrics.clients_added || 0;
+    });
+    
+    return { dates, attendance, reports, clients };
   };
   
   // Create or update attendance chart
@@ -214,6 +221,81 @@ const PerformanceCharts = () => {
       }
     };
   }, [performanceRecords, reportChartRef]);
+  
+  // Create or update client additions chart
+  useEffect(() => {
+    if (!performanceRecords || performanceRecords.length === 0) return;
+    
+    const { dates, clients } = getPerformanceDataByDate(performanceRecords);
+    
+    if (dates.length === 0) return;
+    
+    const ctx = clientChartRef.current.getContext('2d');
+    
+    // Destroy previous chart if it exists
+    if (clientChart) {
+      clientChart.destroy();
+    }
+    
+    // Create new chart
+    const newChart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: dates,
+        datasets: [{
+          label: 'Clients Added',
+          data: clients,
+          backgroundColor: 'rgba(16, 185, 129, 0.5)',
+          borderColor: 'rgba(16, 185, 129, 1)',
+          borderWidth: 1
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          title: {
+            display: true,
+            text: 'Client Acquisitions',
+            font: {
+              size: 16
+            }
+          },
+          tooltip: {
+            mode: 'index',
+            intersect: false
+          },
+          legend: {
+            position: 'bottom'
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            title: {
+              display: true,
+              text: 'Count'
+            }
+          },
+          x: {
+            title: {
+              display: true,
+              text: 'Date'
+            }
+          }
+        }
+      }
+    });
+    
+    setClientChart(newChart);
+    
+    // Return cleanup function
+    return () => {
+      if (newChart) {
+        newChart.destroy();
+      }
+    };
+  }, [performanceRecords, clientChartRef]);
   
   // Create or update performance trend chart (combine multiple metrics)
   useEffect(() => {
@@ -377,7 +459,7 @@ const PerformanceCharts = () => {
             ) : (
               <>
                 {/* Charts Grid */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
                   {/* Attendance Performance Chart */}
                   <div className="bg-white shadow rounded-lg p-6">
                     <div className="h-80">
@@ -389,6 +471,13 @@ const PerformanceCharts = () => {
                   <div className="bg-white shadow rounded-lg p-6">
                     <div className="h-80">
                       <canvas ref={reportChartRef}></canvas>
+                    </div>
+                  </div>
+                  
+                  {/* Client Acquisitions Chart */}
+                  <div className="bg-white shadow rounded-lg p-6">
+                    <div className="h-80">
+                      <canvas ref={clientChartRef}></canvas>
                     </div>
                   </div>
                 </div>
@@ -414,6 +503,7 @@ const PerformanceCharts = () => {
                             <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date Range</th>
                             <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Attendance Rate</th>
                             <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reports Completed</th>
+                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Clients Added</th>
                             <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Updated</th>
                           </tr>
                         </thead>
@@ -437,6 +527,7 @@ const PerformanceCharts = () => {
                                   </div>
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{metrics.report_completion || 0}</td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{metrics.clients_added || 0}</td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{lastUpdated}</td>
                               </tr>
                             );

@@ -253,7 +253,10 @@ def calculate_performance_for_period(agent, period, start_date, end_date):
     # Get client additions
     client_count = Client.objects.filter(
         added_by=agent,
-        timestamp__date__range=[start_date, end_date]
+        timestamp__range=[
+            datetime.combine(start_date, datetime.min.time(), tzinfo=timezone.get_current_timezone()),
+            datetime.combine(end_date, datetime.max.time(), tzinfo=timezone.get_current_timezone())
+        ]
     ).count()
     
     # Calculate performance metrics
