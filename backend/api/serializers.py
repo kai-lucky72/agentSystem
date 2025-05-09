@@ -2,7 +2,7 @@ from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from .models import (
-    Group, Client, Attendance,
+    Group, Client, Attendance, AttendanceTimeFrame,
     Report, Performance, ActivityLog, Notification, LoginHelpRequest,
     ROLE_ADMIN, ROLE_MANAGER, ROLE_SALES_STAFF, ROLE_TEAM_LEADER,
     ROLE_INDIVIDUAL_AGENT, ROLE_SALES_AGENT
@@ -384,6 +384,55 @@ class ResolveHelpRequestSerializer(serializers.ModelSerializer):
         
         validated_data['resolved_by'] = user
         return super().update(instance, validated_data)
+
+
+class AttendanceTimeFrameSerializer(serializers.ModelSerializer):
+    sales_staff_details = UserListSerializer(source='sales_staff', read_only=True)
+
+    class Meta:
+        model = AttendanceTimeFrame
+        fields = ['id', 'sales_staff', 'sales_staff_details', 'date', 'start_time', 'end_time', 'created_at']
+        extra_kwargs = {
+            'sales_staff': {'required': False},
+            'created_at': {'read_only': True}
+        }
+    
+    def validate(self, attrs):
+        request = self.context.get('request')
+        user = request.user if request else None
+        
+        # If sales_staff is not provided, use the authenticated user
+        if 'sales_staff' not in attrs:
+            # Ensure the user is a sales staff
+            if user and user.role == ROLE_SALES_STAFF:
+                attrs['sales_staff'] = user
+            else:
+                raise serializers.ValidationError({
+                    "non_field_errors": "Only Sales Staff can create attendance time frames"
+                })
+        
+        # Validate start_time is before end_time
+        if 'start_time' in attrs and 'end_time' in attrs:
+            if attrs['start_time'] >= attrs['end_time']:
+                raise serializers.ValidationError({
+                    "end_time": "End time must be after start time"
+                })
+        
+        return attrs
+    
+    def create(self, validated_data):
+        # Check if a time frame already exists for this date and sales staff
+        existing = AttendanceTimeFrame.objects.filter(
+            sales_staff=validated_data['sales_staff'],
+            date=validated_data['date']
+        ).first()
+        
+        if existing:
+            raise serializers.ValidationError({
+                "date": "A time frame already exists for this date"
+            })
+        
+        return super().create(validated_data)
 
 
 class PasswordResetSerializer(serializers.Serializer):
