@@ -3,7 +3,7 @@ from django.utils import timezone
 from django.db.models import Q, Count
 from datetime import timedelta, datetime
 from .models import (
-    User, Attendance, Report, Notification, AttendanceTimeFrame, Performance,
+    User, Attendance, Report, Notification, AttendanceTimeFrame, Performance, Client,
     ROLE_ADMIN, ROLE_MANAGER, ROLE_SALES_STAFF, ROLE_TEAM_LEADER,
     ROLE_INDIVIDUAL_AGENT, ROLE_SALES_AGENT,
     STATUS_APPROVED as REPORT_APPROVED, STATUS_REJECTED as REPORT_REJECTED
@@ -187,36 +187,91 @@ def update_performance_metrics():
     start_of_week = today - timedelta(days=today.weekday())
     end_of_week = start_of_week + timedelta(days=6)
     
+    # Calculate monthly metrics
+    start_of_month = today.replace(day=1)
+    next_month = today.replace(day=28) + timedelta(days=4)  # Move to next month
+    end_of_month = next_month.replace(day=1) - timedelta(days=1)  # Last day of current month
+    
+    # Calculate quarterly metrics
+    current_month = today.month
+    if current_month in [1, 2, 3]:
+        start_of_quarter = today.replace(month=1, day=1)
+        end_of_quarter = today.replace(month=3, day=31)
+    elif current_month in [4, 5, 6]:
+        start_of_quarter = today.replace(month=4, day=1)
+        end_of_quarter = today.replace(month=6, day=30)
+    elif current_month in [7, 8, 9]:
+        start_of_quarter = today.replace(month=7, day=1)
+        end_of_quarter = today.replace(month=9, day=30)
+    else:
+        start_of_quarter = today.replace(month=10, day=1)
+        end_of_quarter = today.replace(month=12, day=31)
+    
     for agent in agents:
-        # Get attendance data
-        attendance_count = Attendance.objects.filter(
-            user=agent, 
-            date__range=[start_of_week, end_of_week]
-        ).count()
-        
-        # Get approved reports
-        report_count = Report.objects.filter(
-            submitted_by=agent,
-            status=REPORT_APPROVED,
-            period_start_date__gte=start_of_week,
-            period_end_date__lte=end_of_week
-        ).count()
-        
-        # Calculate performance metrics
-        metrics = {
-            'attendance_rate': (attendance_count / 5) * 100 if attendance_count > 0 else 0,
-            'report_completion': report_count,
-            'last_updated': timezone.now().isoformat(),
-        }
-        
-        # Update or create performance record
-        performance, created = Performance.objects.update_or_create(
-            user=agent,
-            period='weekly',
-            period_start_date=start_of_week,
-            period_end_date=end_of_week,
-            defaults={'metrics_json': metrics}
+        # Weekly metrics
+        calculate_performance_for_period(
+            agent=agent, 
+            period='weekly', 
+            start_date=start_of_week, 
+            end_date=end_of_week
         )
+        
+        # Monthly metrics
+        calculate_performance_for_period(
+            agent=agent, 
+            period='monthly', 
+            start_date=start_of_month, 
+            end_date=end_of_month
+        )
+        
+        # Quarterly metrics
+        calculate_performance_for_period(
+            agent=agent, 
+            period='quarterly', 
+            start_date=start_of_quarter, 
+            end_date=end_of_quarter
+        )
+
+def calculate_performance_for_period(agent, period, start_date, end_date):
+    """
+    Calculate performance metrics for a specific user and time period
+    """
+    # Get attendance data
+    attendance_count = Attendance.objects.filter(
+        user=agent, 
+        date__range=[start_date, end_date]
+    ).count()
+    
+    # Get approved reports
+    report_count = Report.objects.filter(
+        submitted_by=agent,
+        status=REPORT_APPROVED,
+        period_start_date__gte=start_date,
+        period_end_date__lte=end_date
+    ).count()
+    
+    # Get client additions
+    client_count = Client.objects.filter(
+        added_by=agent,
+        timestamp__date__range=[start_date, end_date]
+    ).count()
+    
+    # Calculate performance metrics
+    metrics = {
+        'attendance_rate': (attendance_count / 5) * 100 if attendance_count > 0 else 0,
+        'report_completion': report_count,
+        'clients_added': client_count,
+        'last_updated': timezone.now().isoformat(),
+    }
+    
+    # Update or create performance record
+    performance, created = Performance.objects.update_or_create(
+        user=agent,
+        period=period,
+        period_start_date=start_date,
+        period_end_date=end_date,
+        defaults={'metrics_json': metrics}
+    )
 
 @background
 def notify_pending_report_reviews():

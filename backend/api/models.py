@@ -155,9 +155,14 @@ class Report(models.Model):
     submitted_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='submitted_reports')
     submitted_to = models.ForeignKey(User, on_delete=models.CASCADE, related_name='received_reports')
     period = models.CharField(max_length=20, choices=PERIOD_CHOICES)
+    period_start_date = models.DateField(default=timezone.now)
+    period_end_date = models.DateField(default=timezone.now)
     content = models.TextField()
     comment = models.TextField(blank=True)
     status = models.CharField(max_length=20, choices=REPORT_STATUS_CHOICES, default=STATUS_SUBMITTED)
+    
+    class Meta:
+        ordering = ['-period_end_date']
     
     def __str__(self):
         return f"{self.submitted_by.work_id} - {self.period} - {self.status}"
