@@ -9,83 +9,190 @@
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
             background-color: #f7f9fc;
             margin: 0;
-            padding: 40px;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
         }
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-            background-color: white;
-            padding: 30px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-        }
-        h1 {
-            color: #2a4365;
-            margin-bottom: 20px;
+        header {
+            background-color: #2a4365;
+            color: white;
+            padding: 20px;
             text-align: center;
         }
-        h2 {
-            color: #2d3748;
-            margin-top: 30px;
+        header h1 {
+            margin: 0;
+            font-size: 2rem;
         }
-        p {
+        header p {
+            margin: 10px 0 0;
+            opacity: 0.9;
+        }
+        .main-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 20px;
+        }
+        .card-container {
+            width: 100%;
+            max-width: 1000px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin: 0 auto;
+        }
+        .card {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            padding: 25px;
+            text-align: center;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.15);
+        }
+        .card h2 {
+            color: #2a4365;
+            margin-top: 0;
+            margin-bottom: 15px;
+            font-size: 1.5rem;
+        }
+        .card p {
             color: #4a5568;
             line-height: 1.6;
+            margin-bottom: 20px;
         }
-        .feature-list {
-            list-style-type: none;
-            padding: 0;
-        }
-        .feature-list li {
-            padding: 10px 0;
-            border-bottom: 1px solid #edf2f7;
-            color: #4a5568;
-        }
-        .feature-list li:before {
-            content: "✅ ";
-        }
-        .backend-link {
-            display: block;
-            margin: 30px auto 0;
-            text-align: center;
-        }
-        .backend-link a {
+        .card-btn {
             display: inline-block;
-            padding: 10px 20px;
             background-color: #4299e1;
             color: white;
             text-decoration: none;
+            padding: 10px 20px;
             border-radius: 5px;
             font-weight: 500;
             transition: background-color 0.2s;
         }
-        .backend-link a:hover {
+        .card-btn:hover {
             background-color: #3182ce;
+        }
+        .features {
+            margin-top: 50px;
+            width: 100%;
+            max-width: 1000px;
+        }
+        .features h2 {
+            color: #2a4365;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .feature-list {
+            list-style-type: none;
+            padding: 0;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 15px;
+        }
+        .feature-item {
+            background-color: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            display: flex;
+            align-items: center;
+        }
+        .feature-icon {
+            flex-shrink: 0;
+            width: 40px;
+            height: 40px;
+            background-color: #ebf4ff;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            color: #4299e1;
+            font-weight: bold;
+        }
+        .feature-text {
+            color: #4a5568;
+            font-size: 1rem;
+        }
+        footer {
+            background-color: #2d3748;
+            color: white;
+            text-align: center;
+            padding: 20px;
+            margin-top: auto;
+        }
+        footer p {
+            margin: 0;
+            opacity: 0.8;
         }
     </style>
 </head>
 <body>
-    <div class="container">
+    <header>
         <h1>Team Management System</h1>
-        <p>Welcome to the Team Management System. This application provides a comprehensive solution for managing teams, tracking attendance, and monitoring performance.</p>
-        
-        <h2>Features</h2>
-        <ul class="feature-list">
-            <li>User management with hierarchical roles</li>
-            <li>Attendance tracking with time frames</li>
-            <li>Client management system</li>
-            <li>Report submission and review</li>
-            <li>Performance metrics and visualization</li>
-            <li>Real-time notifications</li>
-        </ul>
-        
-        <div class="backend-link">
-            <a href="/api/">View API Endpoints</a>
+        <p>A comprehensive solution for managing teams, attendance, and performance</p>
+    </header>
+
+    <div class="main-container">
+        <div class="card-container">
+            <div class="card">
+                <h2>Django Admin Interface</h2>
+                <p>Access the powerful Django admin interface to manage all aspects of your team system. Perfect for administrators and managers.</p>
+                <a href="/admin/" class="card-btn">Open Admin Interface</a>
+            </div>
+            <div class="card">
+                <h2>React Frontend</h2>
+                <p>Use the modern React frontend with a responsive UI designed for team members. Optimized for daily tasks and reporting.</p>
+                <a href="http://localhost:5001/" class="card-btn">Open React App</a>
+            </div>
+            <div class="card">
+                <h2>API Documentation</h2>
+                <p>Explore the REST API endpoints for developers and integrations. View the available routes and data models.</p>
+                <a href="/api/" class="card-btn">View API Endpoints</a>
+            </div>
         </div>
-        
-        <div class="backend-link">
-            <a href="/admin/">Admin Interface</a>
+
+        <div class="features">
+            <h2>Key Features</h2>
+            <div class="feature-list">
+                <div class="feature-item">
+                    <div class="feature-icon">👥</div>
+                    <div class="feature-text">User management with hierarchical roles</div>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">⏰</div>
+                    <div class="feature-text">Attendance tracking with time frames</div>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">🏢</div>
+                    <div class="feature-text">Client management system</div>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">📊</div>
+                    <div class="feature-text">Report submission and review</div>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">📈</div>
+                    <div class="feature-text">Performance metrics and visualization</div>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">🔔</div>
+                    <div class="feature-text">Real-time notifications</div>
+                </div>
+            </div>
         </div>
     </div>
+
+    <footer>
+        <p>Team Management System &copy; 2025 | Admin credentials: admin@example.com / admin123</p>
+    </footer>
 </body>
 </html>

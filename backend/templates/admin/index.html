@@ -1,0 +1,127 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+
+{% block extrastyle %}
+{{ block.super }}
+<style>
+  .dashboard-card {
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    padding: 15px;
+    margin-bottom: 15px;
+    background-color: #fff;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    transition: all 0.2s ease;
+  }
+  
+  .dashboard-card:hover {
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+  }
+  
+  .dashboard-card h2 {
+    margin-top: 0;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 10px;
+    color: #417690;
+  }
+  
+  .dashboard-card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+  }
+  
+  .stats-box {
+    display: inline-block;
+    padding: 10px 15px;
+    margin-right: 10px;
+    margin-bottom: 10px;
+    background-color: #f5f5f5;
+    border-radius: 4px;
+    font-weight: bold;
+  }
+  
+  .stats-box span {
+    display: block;
+    font-size: 0.8em;
+    color: #666;
+    font-weight: normal;
+  }
+</style>
+{% endblock %}
+
+{% block coltype %}colMS{% endblock %}
+
+{% block bodyclass %}{{ block.super }} dashboard{% endblock %}
+
+{% block content %}
+<div id="content-main">
+  <div class="dashboard-card">
+    <h2>{% trans 'Quick Actions' %}</h2>
+    <div>
+      <a href="{% url 'admin:api_user_add' %}" class="button">Add User</a>
+      <a href="{% url 'admin:api_group_add' %}" class="button">Add Group</a>
+      <a href="{% url 'admin:api_client_add' %}" class="button">Add Client</a>
+      <a href="{% url 'admin:api_attendance_add' %}" class="button">Record Attendance</a>
+    </div>
+  </div>
+
+  <div class="dashboard-card-grid">
+    {% if app_list %}
+      {% for app in app_list %}
+        <div class="dashboard-card">
+          <h2>{{ app.name }}</h2>
+          <ul>
+            {% for model in app.models %}
+              <li>
+                {% if model.admin_url %}
+                  <a href="{{ model.admin_url }}">{{ model.name }}</a>
+                {% else %}
+                  {{ model.name }}
+                {% endif %}
+                
+                {% if model.add_url %}
+                  &nbsp;<a href="{{ model.add_url }}" class="addlink">{% trans 'Add' %}</a>
+                {% endif %}
+              </li>
+            {% endfor %}
+          </ul>
+        </div>
+      {% endfor %}
+    {% else %}
+      <p>{% trans 'You don't have permission to view or edit anything.' %}</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block sidebar %}
+<div id="content-related">
+  <div class="dashboard-card">
+    <h2>{% trans 'Recent Actions' %}</h2>
+    {% load log %}
+    {% get_admin_log 10 as admin_log for_user user %}
+    {% if not admin_log %}
+      <p>{% trans 'None available' %}</p>
+    {% else %}
+      <ul class="actionlist">
+        {% for entry in admin_log %}
+          <li class="{% if entry.is_addition %}addlink{% endif %}{% if entry.is_change %}changelink{% endif %}{% if entry.is_deletion %}deletelink{% endif %}">
+            {% if entry.is_deletion or not entry.get_admin_url %}
+              {{ entry.object_repr }}
+            {% else %}
+              <a href="{{ entry.get_admin_url }}">{{ entry.object_repr }}</a>
+            {% endif %}
+            <br>
+            {% if entry.content_type %}
+              <span class="mini quiet">{% filter capfirst %}{{ entry.content_type.name }}{% endfilter %}</span>
+            {% else %}
+              <span class="mini quiet">{% trans 'Unknown content' %}</span>
+            {% endif %}
+          </li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

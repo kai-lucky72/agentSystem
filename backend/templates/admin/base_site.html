@@ -1,0 +1,65 @@
+{% extends "admin/base.html" %}
+{% load static %}
+
+{% block title %}{{ title }} | {{ site_title|default:_('Django site admin') }}{% endblock %}
+
+{% block branding %}
+<h1 id="site-name">
+  <a href="{% url 'admin:index' %}" style="color: #447e9b; font-weight: bold;">
+    {{ site_header|default:_('Team Management') }}
+  </a>
+</h1>
+{% endblock %}
+
+{% block extrastyle %}
+{{ block.super }}
+<style>
+  :root {
+    --primary: #447e9b;
+    --secondary: #417690;
+    --accent: #79aec8;
+    --primary-fg: #fff;
+    --header-color: #417690;
+    --header-link-color: #fff;
+  }
+
+  #header {
+    background: var(--header-color);
+    color: var(--header-link-color);
+  }
+
+  table thead th.sorted .sortoptions {
+    color: var(--primary);
+  }
+  
+  #header a:link, #header a:visited {
+    color: var(--header-link-color);
+  }
+  
+  /* Make admin more responsive */
+  @media (max-width: 767px) {
+    #content {
+      padding: 15px 5px;
+    }
+    
+    .form-row {
+      padding: 5px 0;
+    }
+    
+    div.form-row {
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .aligned label {
+      width: 100%;
+      padding: 0 0 5px 0;
+    }
+    
+    .aligned .fieldBox {
+      float: none;
+      margin-left: 0;
+    }
+  }
+</style>
+{% endblock %}
