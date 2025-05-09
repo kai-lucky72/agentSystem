@@ -68,13 +68,94 @@ class UserAdmin(BaseUserAdmin):
 
 
 admin.site.register(User, UserAdmin)
-admin.site.register(Group)
-admin.site.register(GroupMembership)
-admin.site.register(Client)
-admin.site.register(AttendanceTimeFrame)
-admin.site.register(Attendance)
-admin.site.register(Report)
-admin.site.register(Performance)
-admin.site.register(ActivityLog)
-admin.site.register(Notification)
-admin.site.register(LoginHelpRequest)
+class GroupAdmin(admin.ModelAdmin):
+    list_display = ('name', 'team_leader', 'sales_staff', 'created_at')
+    search_fields = ('name',)
+    list_select_related = ('team_leader', 'sales_staff')
+    list_per_page = 20
+
+
+class GroupMembershipAdmin(admin.ModelAdmin):
+    list_display = ('user', 'group', 'joined_at')
+    list_select_related = ('user', 'group')
+    list_filter = ('group',)
+    list_per_page = 20
+
+
+class ClientAdmin(admin.ModelAdmin):
+    list_display = ('name', 'contact', 'added_by', 'created_at')
+    search_fields = ('name', 'contact')
+    list_select_related = ('added_by',)
+    list_per_page = 20
+
+
+class AttendanceTimeFrameAdmin(admin.ModelAdmin):
+    list_display = ('sales_staff', 'date', 'start_time', 'end_time')
+    list_select_related = ('sales_staff',)
+    list_filter = ('date',)
+    date_hierarchy = 'date'
+    list_per_page = 20
+
+
+class AttendanceAdmin(admin.ModelAdmin):
+    list_display = ('user', 'date', 'time', 'status', 'excused_by')
+    list_select_related = ('user', 'excused_by')
+    list_filter = ('status', 'date')
+    search_fields = ('user__email', 'user__work_id')
+    date_hierarchy = 'date'
+    list_per_page = 20
+
+
+class ReportAdmin(admin.ModelAdmin):
+    list_display = ('submitted_by', 'submitted_to', 'period', 'status', 'period_start_date', 'period_end_date')
+    list_select_related = ('submitted_by', 'submitted_to')
+    list_filter = ('status', 'period')
+    search_fields = ('submitted_by__email', 'submitted_to__email')
+    date_hierarchy = 'period_start_date'
+    list_per_page = 20
+
+
+class PerformanceAdmin(admin.ModelAdmin):
+    list_display = ('user', 'period', 'period_start_date', 'period_end_date')
+    list_select_related = ('user',)
+    list_filter = ('period',)
+    search_fields = ('user__email', 'user__work_id')
+    date_hierarchy = 'period_start_date'
+    list_per_page = 20
+
+
+class ActivityLogAdmin(admin.ModelAdmin):
+    list_display = ('user', 'action', 'timestamp', 'ip_address')
+    list_select_related = ('user',)
+    list_filter = ('action',)
+    search_fields = ('user__email', 'action', 'details')
+    date_hierarchy = 'timestamp'
+    list_per_page = 20
+
+
+class NotificationAdmin(admin.ModelAdmin):
+    list_display = ('receiver', 'sender', 'message', 'is_read', 'created_at')
+    list_select_related = ('receiver', 'sender')
+    list_filter = ('is_read', 'is_system')
+    search_fields = ('receiver__email', 'message')
+    list_per_page = 20
+
+
+class LoginHelpRequestAdmin(admin.ModelAdmin):
+    list_display = ('user', 'status', 'created_at', 'resolved_by', 'resolved_at')
+    list_select_related = ('user', 'resolved_by')
+    list_filter = ('status',)
+    search_fields = ('user__email', 'message')
+    list_per_page = 20
+
+
+admin.site.register(Group, GroupAdmin)
+admin.site.register(GroupMembership, GroupMembershipAdmin)
+admin.site.register(Client, ClientAdmin)
+admin.site.register(AttendanceTimeFrame, AttendanceTimeFrameAdmin)
+admin.site.register(Attendance, AttendanceAdmin)
+admin.site.register(Report, ReportAdmin)
+admin.site.register(Performance, PerformanceAdmin)
+admin.site.register(ActivityLog, ActivityLogAdmin)
+admin.site.register(Notification, NotificationAdmin)
+admin.site.register(LoginHelpRequest, LoginHelpRequestAdmin)

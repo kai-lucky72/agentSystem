@@ -160,6 +160,18 @@ CORS_ALLOWED_ORIGINS = [
 ]
 
 # Background tasks settings
-# Disabled for now
-# BACKGROUND_TASK_RUN_ASYNC = True
-# MAX_ATTEMPTS = 1
+BACKGROUND_TASK_RUN_ASYNC = True
+MAX_ATTEMPTS = 1
+
+# Cache settings
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'team-management-cache',
+    }
+}
+
+# Admin optimization
+ADMIN_SITE_TITLE = "Team Management Admin"
+ADMIN_SITE_HEADER = "Team Management"
+ADMIN_INDEX_TITLE = "Administration"
