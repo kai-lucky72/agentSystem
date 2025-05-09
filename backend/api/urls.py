@@ -6,6 +6,7 @@ from .views import (
     ClientViewSet, AttendanceViewSet, ReportViewSet,
     PerformanceViewSet, ActivityLogViewSet, NotificationViewSet, LoginHelpRequestViewSet
 )
+from .timeframe_views import AttendanceTimeFrameViewSet
 
 router = DefaultRouter()
 router.register(r'users', UserViewSet)

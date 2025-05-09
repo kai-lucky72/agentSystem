@@ -6,7 +6,7 @@ from django.db.models import Q
 from django.contrib.auth import get_user_model
 from django.utils import timezone
 from .models import (
-    Group, Client, Attendance,
+    Group, Client, Attendance, AttendanceTimeFrame,
     Report, Performance, ActivityLog, Notification, LoginHelpRequest,
     ROLE_ADMIN, ROLE_MANAGER, ROLE_SALES_STAFF, ROLE_TEAM_LEADER,
     ROLE_INDIVIDUAL_AGENT, ROLE_SALES_AGENT
@@ -16,7 +16,7 @@ from .serializers import (
     ClientSerializer, AttendanceSerializer, ExcuseAttendanceSerializer,
     ReportSerializer, ReportActionSerializer, PerformanceSerializer, ActivityLogSerializer,
     NotificationSerializer, LoginHelpRequestSerializer, ResolveHelpRequestSerializer,
-    PasswordResetSerializer
+    PasswordResetSerializer, AttendanceTimeFrameSerializer
 )
 from .permissions import (
     IsAdmin, IsManager, IsSalesStaff, IsTeamLeader, IsAgent,
