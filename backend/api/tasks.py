@@ -1,11 +1,12 @@
 from background_task import background
 from django.utils import timezone
-from django.db.models import Q
-from datetime import timedelta
+from django.db.models import Q, Count
+from datetime import timedelta, datetime
 from .models import (
-    User, Attendance, Report, Notification, AttendanceTimeFrame,
+    User, Attendance, Report, Notification, AttendanceTimeFrame, Performance,
     ROLE_ADMIN, ROLE_MANAGER, ROLE_SALES_STAFF, ROLE_TEAM_LEADER,
-    ROLE_INDIVIDUAL_AGENT, ROLE_SALES_AGENT
+    ROLE_INDIVIDUAL_AGENT, ROLE_SALES_AGENT,
+    STATUS_APPROVED as REPORT_APPROVED, STATUS_REJECTED as REPORT_REJECTED
 )
 
 @background(schedule=60*60)  # Run every hour
@@ -166,5 +167,78 @@ def send_quarterly_report_reminders():
             Notification.objects.create(
                 receiver=agent,
                 message="Please submit your quarterly report",
+                is_system=True
+            )
+
+@background(schedule=60*60*24*7)  # Run weekly
+def update_performance_metrics():
+    """
+    Update performance metrics for all active users based on their activities
+    """
+    today = timezone.now().date()
+    
+    # Get all active agents
+    agents = User.objects.filter(
+        is_active=True,
+        role__in=[ROLE_TEAM_LEADER, ROLE_INDIVIDUAL_AGENT, ROLE_SALES_AGENT]
+    )
+    
+    # Calculate weekly metrics
+    start_of_week = today - timedelta(days=today.weekday())
+    end_of_week = start_of_week + timedelta(days=6)
+    
+    for agent in agents:
+        # Get attendance data
+        attendance_count = Attendance.objects.filter(
+            user=agent, 
+            date__range=[start_of_week, end_of_week]
+        ).count()
+        
+        # Get approved reports
+        report_count = Report.objects.filter(
+            submitted_by=agent,
+            status=REPORT_APPROVED,
+            period_start_date__gte=start_of_week,
+            period_end_date__lte=end_of_week
+        ).count()
+        
+        # Calculate performance metrics
+        metrics = {
+            'attendance_rate': (attendance_count / 5) * 100 if attendance_count > 0 else 0,
+            'report_completion': report_count,
+            'last_updated': timezone.now().isoformat(),
+        }
+        
+        # Update or create performance record
+        performance, created = Performance.objects.update_or_create(
+            user=agent,
+            period='weekly',
+            period_start_date=start_of_week,
+            period_end_date=end_of_week,
+            defaults={'metrics_json': metrics}
+        )
+
+@background(schedule=60*60*24)  # Run daily
+def notify_pending_report_reviews():
+    """
+    Notify managers and sales staff about pending reports that need review
+    """
+    # Get all managers and sales staff
+    reviewers = User.objects.filter(
+        is_active=True,
+        role__in=[ROLE_MANAGER, ROLE_SALES_STAFF]
+    )
+    
+    for reviewer in reviewers:
+        # Count pending reports for this reviewer
+        pending_count = Report.objects.filter(
+            submitted_to=reviewer,
+            status='submitted'
+        ).count()
+        
+        if pending_count > 0:
+            Notification.objects.create(
+                receiver=reviewer,
+                message=f"You have {pending_count} pending reports that need your review",
                 is_system=True
             )

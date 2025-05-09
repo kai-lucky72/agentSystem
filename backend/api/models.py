@@ -34,10 +34,12 @@ PERIOD_CHOICES = [
 # REPORT STATUS CHOICES
 STATUS_SUBMITTED = 'submitted'
 STATUS_APPROVED = 'approved'
+STATUS_REJECTED = 'rejected'
 
 REPORT_STATUS_CHOICES = [
     (STATUS_SUBMITTED, 'Submitted'),
     (STATUS_APPROVED, 'Approved'),
+    (STATUS_REJECTED, 'Rejected'),
 ]
 
 # ATTENDANCE STATUS CHOICES
@@ -195,6 +197,8 @@ class Notification(models.Model):
     receiver = models.ForeignKey(User, on_delete=models.CASCADE, related_name='received_notifications')
     message = models.TextField()
     timestamp = models.DateTimeField(auto_now_add=True)
+    is_system = models.BooleanField(default=False)
+    is_read = models.BooleanField(default=False)
     
     def __str__(self):
         return f"{self.receiver.work_id} - {self.message[:30]}"
