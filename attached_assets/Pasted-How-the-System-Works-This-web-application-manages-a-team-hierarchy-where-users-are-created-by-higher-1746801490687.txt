@@ -1,0 +1,68 @@
+How the System Works
+This web application manages a team hierarchy where users are created by higher roles, track attendance, submit reports, monitor performance, and add clients, all while maintaining strict data privacy and role-based access. Here’s a breakdown:
+
+User Roles and Hierarchy
+Admin: Created by the system, manages Managers.
+Managers: Created by Admin, manage Sales Staff.
+Sales Staff: Created by Managers, manage Agents.
+Agents: Created by Sales Staff, divided into:
+Team Leaders: Lead groups of Sales Agents.
+Individual Agents: Work solo, report directly to Sales Staff.
+Sales Agents: Part of a group, report to their Team Leader.
+Key Functionalities by Role
+Admin:
+Create, delete, update Managers.
+View all system activity logs.
+Reset user passwords (removes password, allowing login without it).
+Receive and resolve login help requests from users.
+Managers:
+Create, delete, update Sales Staff.
+View performance of all Agents created by their Sales Staff.
+Receive reports submitted by Sales Staff.
+Check attendance of Agents under their Sales Staff.
+Sales Staff:
+Create, delete, update Agents (Team Leaders, Individual Agents, Sales Agents).
+Assign Sales Agents to existing groups or Team Leaders to lead groups (existing or new).
+Set attendance time frames for their Agents.
+Excuse late Agents, allowing them to add clients.
+View performance and reports of all their Agents (Individual Agents directly, Sales Agents via Team Leaders).
+Submit collected reports to their Manager.
+Team Leaders (a type of Agent):
+Lead a group of Sales Agents.
+Add clients (if attended or excused).
+Collect reports from their Sales Agents, add their own, and submit to Sales Staff.
+View performance of their Sales Agents and themselves.
+Check attendance of their group members.
+Individual Agents:
+Add clients (if attended or excused).
+Submit reports directly to their Sales Staff.
+View their own performance.
+Sales Agents (grouped under Team Leaders):
+Add clients (if attended or excused).
+Submit reports to their Team Leader.
+View their own performance.
+Core Workflows
+Attendance:
+Agents must attend daily within a time frame set by their Sales Staff.
+Attendance includes insurance sector and location.
+If late, Sales Staff can excuse them, allowing client additions; excused status is recorded.
+Unattended or unexcused Agents cannot add clients.
+Reporting:
+Sales Agents → Team Leader → Sales Staff → Manager.
+Individual Agents → Sales Staff → Manager.
+Reports include comments and are submitted periodically (weekly, monthly, quarterly).
+Performance:
+Viewed periodically (weekly, monthly, quarterly).
+Access is hierarchical: Managers see all Agents via Sales Staff, Sales Staff see their Agents, etc.
+Authentication:
+Users are created with a work ID and email by a higher role.
+Initial login uses work ID and email; passwords are optional and set later.
+Forgot password triggers Admin reset (removes password); login help requests go to Admin.
+Admin has no password.
+Data Privacy and Integrity:
+No user sees activities outside their hierarchy (e.g., Managers can’t see other Managers’ data).
+Deleting a user doesn’t affect their data or managed users.
+Additional Notes:
+Work IDs are unique and unchangeable.
+Admin can notify all users.
+Sales Staff set independent time frames for their Agents.
