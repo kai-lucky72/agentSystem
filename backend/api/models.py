@@ -167,6 +167,8 @@ class Performance(models.Model):
     id = models.AutoField(primary_key=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='performances')
     period = models.CharField(max_length=20, choices=PERIOD_CHOICES)
+    period_start_date = models.DateField(default=timezone.now)
+    period_end_date = models.DateField(default=timezone.now)
     metrics_json = models.TextField()  # Stored as JSON
     
     @property
@@ -176,6 +178,9 @@ class Performance(models.Model):
     @metrics.setter
     def metrics(self, value):
         self.metrics_json = json.dumps(value)
+    
+    class Meta:
+        ordering = ['-period_end_date']
     
     def __str__(self):
         return f"{self.user.work_id} - {self.period}"
