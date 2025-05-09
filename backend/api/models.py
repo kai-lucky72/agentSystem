@@ -1,16 +1,15 @@
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, BaseUserManager
 from django.db import models
 from django.utils import timezone
-import uuid
 import json
 
 # ROLE CHOICES
-ROLE_ADMIN = 'admin'
-ROLE_MANAGER = 'manager'
-ROLE_SALES_STAFF = 'sales_staff'
-ROLE_TEAM_LEADER = 'team_leader'
-ROLE_INDIVIDUAL_AGENT = 'individual_agent'
-ROLE_SALES_AGENT = 'sales_agent'
+ROLE_ADMIN = 'Admin'
+ROLE_MANAGER = 'Manager'
+ROLE_SALES_STAFF = 'Sales Staff'
+ROLE_TEAM_LEADER = 'Team Leader'
+ROLE_INDIVIDUAL_AGENT = 'Individual Agent'
+ROLE_SALES_AGENT = 'Sales Agent'
 
 ROLE_CHOICES = [
     (ROLE_ADMIN, 'Admin'),
@@ -33,27 +32,32 @@ PERIOD_CHOICES = [
 ]
 
 # REPORT STATUS CHOICES
-STATUS_PENDING = 'pending'
+STATUS_SUBMITTED = 'submitted'
 STATUS_APPROVED = 'approved'
-STATUS_REJECTED = 'rejected'
 
 REPORT_STATUS_CHOICES = [
-    (STATUS_PENDING, 'Pending'),
+    (STATUS_SUBMITTED, 'Submitted'),
     (STATUS_APPROVED, 'Approved'),
-    (STATUS_REJECTED, 'Rejected'),
 ]
 
 # ATTENDANCE STATUS CHOICES
-ATTENDANCE_PRESENT = 'present'
+ATTENDANCE_ATTENDED = 'attended'
 ATTENDANCE_LATE = 'late'
 ATTENDANCE_EXCUSED = 'excused'
-ATTENDANCE_ABSENT = 'absent'
 
 ATTENDANCE_STATUS_CHOICES = [
-    (ATTENDANCE_PRESENT, 'Present'),
+    (ATTENDANCE_ATTENDED, 'Attended'),
     (ATTENDANCE_LATE, 'Late'),
     (ATTENDANCE_EXCUSED, 'Excused'),
-    (ATTENDANCE_ABSENT, 'Absent'),
+]
+
+# LOGIN HELP REQUEST STATUS CHOICES
+LOGIN_HELP_PENDING = 'pending'
+LOGIN_HELP_RESOLVED = 'resolved'
+
+LOGIN_HELP_STATUS_CHOICES = [
+    (LOGIN_HELP_PENDING, 'Pending'),
+    (LOGIN_HELP_RESOLVED, 'Resolved'),
 ]
 
 
@@ -86,15 +90,16 @@ class CustomUserManager(BaseUserManager):
 
 
 class User(AbstractBaseUser, PermissionsMixin):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id = models.AutoField(primary_key=True)
     work_id = models.CharField(max_length=50, unique=True)
     email = models.EmailField(unique=True)
-    role = models.CharField(max_length=20, choices=ROLE_CHOICES)
+    role = models.CharField(max_length=50, choices=ROLE_CHOICES)
+    password = models.CharField(max_length=128, null=True, blank=True)
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    is_superuser = models.BooleanField(default=False)
     created_by = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, related_name='created_users')
+    group = models.ForeignKey('Group', on_delete=models.SET_NULL, null=True, blank=True, related_name='members')
     
     objects = CustomUserManager()
     
@@ -106,66 +111,35 @@ class User(AbstractBaseUser, PermissionsMixin):
 
 
 class Group(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=100)
     team_leader = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='led_groups')
     sales_staff = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='managed_groups')
     created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
     
     def __str__(self):
         return self.name
-
-
-class GroupMembership(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='group_memberships', db_index=True)
-    group = models.ForeignKey(Group, on_delete=models.CASCADE, related_name='memberships', db_index=True)
-    joined_at = models.DateTimeField(auto_now_add=True, db_index=True)
-    
-    class Meta:
-        unique_together = ('user', 'group')
-    
-    def __str__(self):
-        return f"{self.user.work_id} in {self.group.name}"
 
 
 class Client(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=100)
-    contact = models.CharField(max_length=100, blank=True)
-    details = models.TextField(blank=True)
+    details = models.TextField()
     added_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='added_clients')
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    timestamp = models.DateTimeField(auto_now_add=True)
     
     def __str__(self):
         return self.name
 
 
-class AttendanceTimeFrame(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    sales_staff = models.ForeignKey(User, on_delete=models.CASCADE, related_name='timeframes')
-    start_time = models.TimeField()
-    end_time = models.TimeField()
-    date = models.DateField()
-    created_at = models.DateTimeField(auto_now_add=True)
-    
-    def __str__(self):
-        return f"{self.date} - {self.start_time} to {self.end_time}"
-
-
 class Attendance(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id = models.AutoField(primary_key=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='attendances', db_index=True)
     date = models.DateField(db_index=True)
     time = models.TimeField()
-    status = models.CharField(max_length=20, choices=ATTENDANCE_STATUS_CHOICES, default=ATTENDANCE_PRESENT, db_index=True)
+    status = models.CharField(max_length=20, choices=ATTENDANCE_STATUS_CHOICES, default=ATTENDANCE_ATTENDED, db_index=True)
     sector = models.CharField(max_length=100, blank=True)
     location = models.CharField(max_length=100, blank=True)
-    excused_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='excused_attendances')
-    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
-    updated_at = models.DateTimeField(auto_now=True)
     
     class Meta:
         unique_together = ('user', 'date')
@@ -175,31 +149,23 @@ class Attendance(models.Model):
 
 
 class Report(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id = models.AutoField(primary_key=True)
     submitted_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='submitted_reports')
     submitted_to = models.ForeignKey(User, on_delete=models.CASCADE, related_name='received_reports')
     period = models.CharField(max_length=20, choices=PERIOD_CHOICES)
     content = models.TextField()
     comment = models.TextField(blank=True)
-    status = models.CharField(max_length=20, choices=REPORT_STATUS_CHOICES, default=STATUS_PENDING)
-    period_start_date = models.DateField()
-    period_end_date = models.DateField()
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    status = models.CharField(max_length=20, choices=REPORT_STATUS_CHOICES, default=STATUS_SUBMITTED)
     
     def __str__(self):
         return f"{self.submitted_by.work_id} - {self.period} - {self.status}"
 
 
 class Performance(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id = models.AutoField(primary_key=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='performances')
     period = models.CharField(max_length=20, choices=PERIOD_CHOICES)
-    period_start_date = models.DateField()
-    period_end_date = models.DateField()
     metrics_json = models.TextField()  # Stored as JSON
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
     
     @property
     def metrics(self):
@@ -210,15 +176,13 @@ class Performance(models.Model):
         self.metrics_json = json.dumps(value)
     
     def __str__(self):
-        return f"{self.user.work_id} - {self.period} ({self.period_start_date} to {self.period_end_date})"
+        return f"{self.user.work_id} - {self.period}"
 
 
 class ActivityLog(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id = models.AutoField(primary_key=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='activity_logs')
-    action = models.CharField(max_length=255)
-    details = models.TextField(blank=True)
-    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    action = models.TextField()
     timestamp = models.DateTimeField(default=timezone.now)
     
     def __str__(self):
@@ -226,29 +190,21 @@ class ActivityLog(models.Model):
 
 
 class Notification(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id = models.AutoField(primary_key=True)
     sender = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='sent_notifications')
     receiver = models.ForeignKey(User, on_delete=models.CASCADE, related_name='received_notifications')
     message = models.TextField()
-    is_read = models.BooleanField(default=False)
-    is_system = models.BooleanField(default=False)
-    created_at = models.DateTimeField(auto_now_add=True)
+    timestamp = models.DateTimeField(auto_now_add=True)
     
     def __str__(self):
         return f"{self.receiver.work_id} - {self.message[:30]}"
 
 
 class LoginHelpRequest(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    id = models.AutoField(primary_key=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='help_requests')
     message = models.TextField()
-    status = models.CharField(max_length=20, choices=[
-        ('pending', 'Pending'),
-        ('resolved', 'Resolved'),
-    ], default='pending')
-    created_at = models.DateTimeField(auto_now_add=True)
-    resolved_at = models.DateTimeField(null=True, blank=True)
-    resolved_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='resolved_help_requests')
+    status = models.CharField(max_length=20, choices=LOGIN_HELP_STATUS_CHOICES, default=LOGIN_HELP_PENDING)
     
     def __str__(self):
         return f"{self.user.work_id} - {self.status}"

@@ -2,7 +2,7 @@ from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from .models import (
-    Group, GroupMembership, Client, AttendanceTimeFrame, Attendance,
+    Group, Client, Attendance,
     Report, Performance, ActivityLog, Notification, LoginHelpRequest,
     ROLE_ADMIN, ROLE_MANAGER, ROLE_SALES_STAFF, ROLE_TEAM_LEADER,
     ROLE_INDIVIDUAL_AGENT, ROLE_SALES_AGENT
@@ -101,27 +101,7 @@ class GroupSerializer(serializers.ModelSerializer):
         return attrs
 
 
-class GroupMembershipSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = GroupMembership
-        fields = '__all__'
-        
-    def validate(self, attrs):
-        user = attrs.get('user')
-        group = attrs.get('group')
-        
-        if user.role not in [ROLE_SALES_AGENT]:
-            raise serializers.ValidationError({
-                "user": "Only Sales Agents can be added to groups"
-            })
-        
-        # Ensure user is not already in another group
-        if GroupMembership.objects.filter(user=user).exclude(group=group).exists():
-            raise serializers.ValidationError({
-                "user": "This user is already a member of another group"
-            })
-        
-        return attrs
+
 
 
 class ClientSerializer(serializers.ModelSerializer):
@@ -166,25 +146,7 @@ class ClientSerializer(serializers.ModelSerializer):
         return super().create(validated_data)
 
 
-class AttendanceTimeFrameSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = AttendanceTimeFrame
-        fields = '__all__'
-        extra_kwargs = {
-            'sales_staff': {'read_only': True}
-        }
-    
-    def create(self, validated_data):
-        request = self.context.get('request')
-        user = request.user if request else None
-        
-        if user and user.role != ROLE_SALES_STAFF:
-            raise serializers.ValidationError({
-                "non_field_errors": "Only Sales Staff can create time frames"
-            })
-        
-        validated_data['sales_staff'] = user
-        return super().create(validated_data)
+
 
 
 class AttendanceSerializer(serializers.ModelSerializer):
@@ -207,28 +169,7 @@ class AttendanceSerializer(serializers.ModelSerializer):
         if 'user' not in validated_data:
             validated_data['user'] = user
         
-        # Check if there's a time frame for today (for non Sales Staff)
-        today = validated_data.get('date')
-        time = validated_data.get('time')
-        
-        if user.role not in [ROLE_ADMIN, ROLE_MANAGER, ROLE_SALES_STAFF]:
-            # Find time frames set by the sales staff for today
-            time_frames = AttendanceTimeFrame.objects.filter(date=today)
-            
-            if not time_frames.exists():
-                raise serializers.ValidationError({
-                    "date": "No time frame has been set for today"
-                })
-            
-            # Check if attendance is within any time frame
-            is_within_timeframe = False
-            for tf in time_frames:
-                if tf.start_time <= time <= tf.end_time:
-                    is_within_timeframe = True
-                    break
-            
-            if not is_within_timeframe and validated_data.get('status') == 'present':
-                validated_data['status'] = 'late'
+        # No time frame checks needed with the updated model
         
         return super().create(validated_data)
 
@@ -281,10 +222,8 @@ class ReportSerializer(serializers.ModelSerializer):
                     "submitted_to": "Sales Agents must submit reports to Team Leaders"
                 })
             
-            # Ensure Team Leader is from the same group
-            memberships = GroupMembership.objects.filter(user=user)
-            valid_team_leaders = [m.group.team_leader for m in memberships if m.group.team_leader]
-            if submitted_to not in valid_team_leaders:
+            # In the updated model, we'll check based on the group association in the User model
+            if user.group and user.group.team_leader != submitted_to:
                 raise serializers.ValidationError({
                     "submitted_to": "You can only submit reports to your Team Leader"
                 })

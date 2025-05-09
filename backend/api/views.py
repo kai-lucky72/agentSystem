@@ -6,14 +6,14 @@ from django.db.models import Q
 from django.contrib.auth import get_user_model
 from django.utils import timezone
 from .models import (
-    Group, GroupMembership, Client, AttendanceTimeFrame, Attendance,
+    Group, Client, Attendance,
     Report, Performance, ActivityLog, Notification, LoginHelpRequest,
     ROLE_ADMIN, ROLE_MANAGER, ROLE_SALES_STAFF, ROLE_TEAM_LEADER,
     ROLE_INDIVIDUAL_AGENT, ROLE_SALES_AGENT
 )
 from .serializers import (
-    UserSerializer, UserListSerializer, GroupSerializer, GroupMembershipSerializer,
-    ClientSerializer, AttendanceTimeFrameSerializer, AttendanceSerializer, ExcuseAttendanceSerializer,
+    UserSerializer, UserListSerializer, GroupSerializer,
+    ClientSerializer, AttendanceSerializer, ExcuseAttendanceSerializer,
     ReportSerializer, ReportActionSerializer, PerformanceSerializer, ActivityLogSerializer,
     NotificationSerializer, LoginHelpRequestSerializer, ResolveHelpRequestSerializer,
     PasswordResetSerializer
@@ -83,7 +83,7 @@ class UserViewSet(viewsets.ModelViewSet):
         elif user.role == ROLE_TEAM_LEADER:
             # Team leaders can see sales agents in their groups
             led_groups = Group.objects.filter(team_leader=user)
-            agent_ids = GroupMembership.objects.filter(group__in=led_groups).values_list('user_id', flat=True)
+            agent_ids = User.objects.filter(group__in=led_groups, role=ROLE_SALES_AGENT).values_list('id', flat=True)
             return User.objects.filter(Q(id__in=agent_ids) | Q(id=user.id))
         else:
             # Individual and Sales Agents can only see themselves
@@ -176,9 +176,8 @@ class GroupViewSet(viewsets.ModelViewSet):
         elif user.role == ROLE_TEAM_LEADER:
             return Group.objects.filter(team_leader=user)
         else:
-            # Find groups the user is a member of
-            memberships = GroupMembership.objects.filter(user=user).values_list('group_id', flat=True)
-            return Group.objects.filter(id__in=memberships)
+            # Find the group the user is a member of
+            return Group.objects.filter(members__id=user.id)
     
     def perform_create(self, serializer):
         serializer.save()
@@ -207,52 +206,12 @@ class GroupViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['get'])
     def members(self, request, pk=None):
         group = self.get_object()
-        memberships = GroupMembership.objects.filter(group=group)
-        users = [membership.user for membership in memberships]
+        users = User.objects.filter(group=group)
         serializer = UserListSerializer(users, many=True)
         return Response(serializer.data)
 
 
-class GroupMembershipViewSet(viewsets.ModelViewSet):
-    queryset = GroupMembership.objects.all()
-    serializer_class = GroupMembershipSerializer
-    permission_classes = [permissions.IsAuthenticated, CanManageGroups]
-    
-    def get_queryset(self):
-        user = self.request.user
-        group_id = self.request.query_params.get('group_id')
-        
-        queryset = GroupMembership.objects.all()
-        
-        if group_id:
-            queryset = queryset.filter(group_id=group_id)
-        
-        if user.role == ROLE_ADMIN:
-            return queryset
-        elif user.role == ROLE_MANAGER:
-            return queryset
-        elif user.role == ROLE_SALES_STAFF:
-            return queryset.filter(group__sales_staff=user)
-        elif user.role == ROLE_TEAM_LEADER:
-            return queryset.filter(group__team_leader=user)
-        else:
-            return queryset.filter(user=user)
-    
-    def perform_create(self, serializer):
-        serializer.save()
-        log_activity(
-            self.request.user,
-            f"Added {serializer.instance.user.work_id} to group {serializer.instance.group.name}",
-            request=self.request
-        )
-    
-    def perform_destroy(self, instance):
-        log_activity(
-            self.request.user,
-            f"Removed {instance.user.work_id} from group {instance.group.name}",
-            request=self.request
-        )
-        instance.delete()
+
 
 
 class ClientViewSet(viewsets.ModelViewSet):
@@ -268,8 +227,7 @@ class ClientViewSet(viewsets.ModelViewSet):
         elif user.role == ROLE_SALES_STAFF:
             # Sales staff can see clients added by agents they manage
             managed_groups = Group.objects.filter(sales_staff=user)
-            memberships = GroupMembership.objects.filter(group__in=managed_groups)
-            agent_ids = [m.user_id for m in memberships]
+            agent_ids = User.objects.filter(group__in=managed_groups).values_list('id', flat=True)
             
             # Also include individual agents
             individual_agents = User.objects.filter(
@@ -277,7 +235,7 @@ class ClientViewSet(viewsets.ModelViewSet):
                 created_by=user
             ).values_list('id', flat=True)
             
-            agent_ids.extend(individual_agents)
+            agent_ids = list(agent_ids) + list(individual_agents)
             
             return Client.objects.filter(
                 Q(added_by_id__in=agent_ids) |
@@ -286,8 +244,7 @@ class ClientViewSet(viewsets.ModelViewSet):
         elif user.role == ROLE_TEAM_LEADER:
             # Team leaders can see clients added by agents in their groups
             led_groups = Group.objects.filter(team_leader=user)
-            memberships = GroupMembership.objects.filter(group__in=led_groups)
-            agent_ids = [m.user_id for m in memberships]
+            agent_ids = User.objects.filter(group__in=led_groups).values_list('id', flat=True)
             
             return Client.objects.filter(
                 Q(added_by_id__in=agent_ids) |
@@ -322,51 +279,7 @@ class ClientViewSet(viewsets.ModelViewSet):
         instance.delete()
 
 
-class AttendanceTimeFrameViewSet(viewsets.ModelViewSet):
-    queryset = AttendanceTimeFrame.objects.all()
-    serializer_class = AttendanceTimeFrameSerializer
-    permission_classes = [permissions.IsAuthenticated, IsSalesStaff]
-    
-    def get_queryset(self):
-        user = self.request.user
-        date = self.request.query_params.get('date')
-        
-        queryset = AttendanceTimeFrame.objects.all()
-        
-        if date:
-            queryset = queryset.filter(date=date)
-        
-        if user.role in [ROLE_ADMIN, ROLE_MANAGER]:
-            return queryset
-        elif user.role == ROLE_SALES_STAFF:
-            return queryset.filter(sales_staff=user)
-        else:
-            # Agents can see all time frames (but can't modify them)
-            return queryset
-    
-    def perform_create(self, serializer):
-        serializer.save()
-        log_activity(
-            self.request.user,
-            f"Created attendance time frame for {serializer.instance.date}",
-            request=self.request
-        )
-    
-    def perform_update(self, serializer):
-        serializer.save()
-        log_activity(
-            self.request.user,
-            f"Updated attendance time frame for {serializer.instance.date}",
-            request=self.request
-        )
-    
-    def perform_destroy(self, instance):
-        log_activity(
-            self.request.user,
-            f"Deleted attendance time frame for {instance.date}",
-            request=self.request
-        )
-        instance.delete()
+
 
 
 class AttendanceViewSet(viewsets.ModelViewSet):
@@ -392,8 +305,7 @@ class AttendanceViewSet(viewsets.ModelViewSet):
         elif user.role == ROLE_SALES_STAFF:
             # Sales staff can see attendance for agents they manage
             managed_groups = Group.objects.filter(sales_staff=user)
-            memberships = GroupMembership.objects.filter(group__in=managed_groups)
-            agent_ids = [m.user_id for m in memberships]
+            agent_ids = User.objects.filter(group__in=managed_groups).values_list('id', flat=True)
             
             # Also include individual agents
             individual_agents = User.objects.filter(
@@ -401,7 +313,7 @@ class AttendanceViewSet(viewsets.ModelViewSet):
                 created_by=user
             ).values_list('id', flat=True)
             
-            agent_ids.extend(individual_agents)
+            agent_ids = list(agent_ids) + list(individual_agents)
             
             return queryset.filter(
                 Q(user_id__in=agent_ids) |
@@ -410,8 +322,7 @@ class AttendanceViewSet(viewsets.ModelViewSet):
         elif user.role == ROLE_TEAM_LEADER:
             # Team leaders can see attendance for agents in their groups
             led_groups = Group.objects.filter(team_leader=user)
-            memberships = GroupMembership.objects.filter(group__in=led_groups)
-            agent_ids = [m.user_id for m in memberships]
+            agent_ids = User.objects.filter(group__in=led_groups).values_list('id', flat=True)
             
             return queryset.filter(
                 Q(user_id__in=agent_ids) |
@@ -609,8 +520,7 @@ class PerformanceViewSet(viewsets.ModelViewSet):
         elif user.role == ROLE_SALES_STAFF:
             # Sales staff can see performance for agents they manage
             managed_groups = Group.objects.filter(sales_staff=user)
-            memberships = GroupMembership.objects.filter(group__in=managed_groups)
-            agent_ids = [m.user_id for m in memberships]
+            agent_ids = User.objects.filter(group__in=managed_groups).values_list('id', flat=True)
             
             # Also include individual agents
             individual_agents = User.objects.filter(
@@ -618,7 +528,7 @@ class PerformanceViewSet(viewsets.ModelViewSet):
                 created_by=user
             ).values_list('id', flat=True)
             
-            agent_ids.extend(individual_agents)
+            agent_ids = list(agent_ids) + list(individual_agents)
             
             return queryset.filter(
                 Q(user_id__in=agent_ids) |
@@ -627,8 +537,7 @@ class PerformanceViewSet(viewsets.ModelViewSet):
         elif user.role == ROLE_TEAM_LEADER:
             # Team leaders can see performance for agents in their groups
             led_groups = Group.objects.filter(team_leader=user)
-            memberships = GroupMembership.objects.filter(group__in=led_groups)
-            agent_ids = [m.user_id for m in memberships]
+            agent_ids = User.objects.filter(group__in=led_groups).values_list('id', flat=True)
             
             return queryset.filter(
                 Q(user_id__in=agent_ids) |
@@ -674,8 +583,7 @@ class ActivityLogViewSet(viewsets.ReadOnlyModelViewSet):
         elif user.role == ROLE_SALES_STAFF:
             # Sales staff can see logs for agents they manage
             managed_groups = Group.objects.filter(sales_staff=user)
-            memberships = GroupMembership.objects.filter(group__in=managed_groups)
-            agent_ids = [m.user_id for m in memberships]
+            agent_ids = User.objects.filter(group__in=managed_groups).values_list('id', flat=True)
             
             # Also include individual agents
             individual_agents = User.objects.filter(
@@ -683,7 +591,7 @@ class ActivityLogViewSet(viewsets.ReadOnlyModelViewSet):
                 created_by=user
             ).values_list('id', flat=True)
             
-            agent_ids.extend(individual_agents)
+            agent_ids = list(agent_ids) + list(individual_agents)
             
             return queryset.filter(
                 Q(user_id__in=agent_ids) |
@@ -692,8 +600,7 @@ class ActivityLogViewSet(viewsets.ReadOnlyModelViewSet):
         elif user.role == ROLE_TEAM_LEADER:
             # Team leaders can see logs for agents in their groups
             led_groups = Group.objects.filter(team_leader=user)
-            memberships = GroupMembership.objects.filter(group__in=led_groups)
-            agent_ids = [m.user_id for m in memberships]
+            agent_ids = User.objects.filter(group__in=led_groups).values_list('id', flat=True)
             
             return queryset.filter(
                 Q(user_id__in=agent_ids) |

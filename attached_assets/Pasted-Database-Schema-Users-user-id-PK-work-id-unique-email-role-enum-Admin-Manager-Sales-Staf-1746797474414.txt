@@ -1,0 +1,40 @@
+Database Schema
+Users: user_id (PK), work_id (unique), email, role (enum: Admin, Manager, Sales Staff, Team Leader, Individual Agent, Sales Agent), password (nullable), created_by (FK to user_id), group_id (FK to groups, nullable).
+Groups: group_id (PK), team_leader_id (FK to user_id), sales_staff_id (FK to user_id).
+Clients: client_id (PK), details (text), added_by (FK to user_id), timestamp.
+Attendance: attendance_id (PK), user_id (FK), date, time, status (enum: attended, late, excused), sector, location.
+Reports: report_id (PK), submitted_by (FK to user_id), submitted_to (FK to user_id), period (enum: weekly, monthly, quarterly), content (text), comment (text), status (enum: submitted, approved).
+Performance: performance_id (PK), user_id (FK), period (enum: weekly, monthly, quarterly), metrics (JSON or structured fields).
+Activity_Logs: log_id (PK), user_id (FK), action (text), timestamp.
+Notifications: notification_id (PK), sender_id (FK to user_id), receiver_id (FK to user_id), message (text), timestamp.
+Login_Help_Requests: request_id (PK), user_id (FK), message (text), status (enum: pending, resolved).
+API Endpoints
+Authentication:
+POST /login: Authenticate with work ID and email.
+POST /logout: Invalidate session.
+POST /reset-password: Admin resets user password.
+Users:
+GET/POST/PUT/DELETE /users: CRUD operations, restricted by role.
+Groups:
+POST/PUT/DELETE /groups: Manage Agent groups.
+Clients:
+POST /clients: Add client (attendance/excused check).
+GET /clients: View clients within hierarchy.
+Attendance:
+POST /attendance: Record attendance.
+PUT /attendance/excuse: Excuse late Agent.
+GET /attendance: View attendance records.
+Reports:
+POST /reports: Submit report.
+GET /reports: View reports in hierarchy.
+PUT /reports/approve: Approve report.
+Performance:
+GET /performance: Retrieve metrics for charting.
+Logs:
+GET /logs: Admin views activity logs.
+Notifications:
+POST /notifications: Send manual notifications.
+GET /notifications: View received notifications.
+Login Help:
+POST /login-help: Submit help request.
+PUT /login-help/resolve: Admin resolves request.
