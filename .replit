@@ -34,7 +34,7 @@ author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "cd frontend && PORT=5173 BROWSER=none npx react-scripts start"
+args = "cd frontend && PORT=5173 HOST=0.0.0.0 npx react-scripts start"
 waitForPort = 5173
 
 [deployment]
