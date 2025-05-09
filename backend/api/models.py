@@ -119,9 +119,9 @@ class Group(models.Model):
 
 class GroupMembership(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='group_memberships')
-    group = models.ForeignKey(Group, on_delete=models.CASCADE, related_name='memberships')
-    joined_at = models.DateTimeField(auto_now_add=True)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='group_memberships', db_index=True)
+    group = models.ForeignKey(Group, on_delete=models.CASCADE, related_name='memberships', db_index=True)
+    joined_at = models.DateTimeField(auto_now_add=True, db_index=True)
     
     class Meta:
         unique_together = ('user', 'group')
@@ -157,14 +157,14 @@ class AttendanceTimeFrame(models.Model):
 
 class Attendance(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='attendances')
-    date = models.DateField()
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='attendances', db_index=True)
+    date = models.DateField(db_index=True)
     time = models.TimeField()
-    status = models.CharField(max_length=20, choices=ATTENDANCE_STATUS_CHOICES, default=ATTENDANCE_PRESENT)
+    status = models.CharField(max_length=20, choices=ATTENDANCE_STATUS_CHOICES, default=ATTENDANCE_PRESENT, db_index=True)
     sector = models.CharField(max_length=100, blank=True)
     location = models.CharField(max_length=100, blank=True)
     excused_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='excused_attendances')
-    created_at = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
     updated_at = models.DateTimeField(auto_now=True)
     
     class Meta:
