@@ -208,3 +208,19 @@ class LoginHelpRequest(models.Model):
     
     def __str__(self):
         return f"{self.user.work_id} - {self.status}"
+
+
+class AttendanceTimeFrame(models.Model):
+    id = models.AutoField(primary_key=True)
+    sales_staff = models.ForeignKey(User, on_delete=models.CASCADE, related_name='set_time_frames', limit_choices_to={'role': ROLE_SALES_STAFF})
+    date = models.DateField(db_index=True)
+    start_time = models.TimeField()
+    end_time = models.TimeField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        unique_together = ('sales_staff', 'date')
+        ordering = ['-date', 'start_time']
+    
+    def __str__(self):
+        return f"{self.sales_staff.work_id} - {self.date} - {self.start_time} to {self.end_time}"
