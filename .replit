@@ -34,16 +34,28 @@ author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "cd frontend && HOST=0.0.0.0 PORT=5173 npx react-scripts start"
-waitForPort = 5173
+args = "cd frontend && PORT=5001 HOST=0.0.0.0 react-scripts start"
+waitForPort = 5001
 
 [deployment]
 run = ["sh", "-c", "cd backend && python manage.py runserver 0.0.0.0:5000"]
+
+[[ports]]
+localPort = 3000
+externalPort = 3001
 
 [[ports]]
 localPort = 5000
 externalPort = 80
 
 [[ports]]
+localPort = 5001
+externalPort = 3002
+
+[[ports]]
 localPort = 5173
 externalPort = 5173
+
+[[ports]]
+localPort = 5174
+externalPort = 3000
