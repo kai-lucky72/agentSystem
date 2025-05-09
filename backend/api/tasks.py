@@ -9,7 +9,7 @@ from .models import (
     STATUS_APPROVED as REPORT_APPROVED, STATUS_REJECTED as REPORT_REJECTED
 )
 
-@background(schedule=60*60)  # Run every hour
+@background
 def send_attendance_reminders():
     """
     Send notifications to agents who haven't recorded their attendance today
@@ -50,7 +50,7 @@ def send_attendance_reminders():
                 break
 
 
-@background(schedule=60*60*24)  # Run daily
+@background
 def send_report_reminders():
     """
     Send reminders for pending reports
@@ -170,7 +170,7 @@ def send_quarterly_report_reminders():
                 is_system=True
             )
 
-@background(schedule=60*60*24*7)  # Run weekly
+@background
 def update_performance_metrics():
     """
     Update performance metrics for all active users based on their activities
@@ -218,7 +218,7 @@ def update_performance_metrics():
             defaults={'metrics_json': metrics}
         )
 
-@background(schedule=60*60*24)  # Run daily
+@background
 def notify_pending_report_reviews():
     """
     Notify managers and sales staff about pending reports that need review
