@@ -1,5 +1,4 @@
-from django.db import migrations, models
-import django.utils.timezone
+from django.db import migrations
 
 
 class Migration(migrations.Migration):
@@ -9,16 +8,6 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.AddField(
-            model_name='report',
-            name='period_start_date',
-            field=models.DateField(default=django.utils.timezone.now),
-        ),
-        migrations.AddField(
-            model_name='report',
-            name='period_end_date',
-            field=models.DateField(default=django.utils.timezone.now),
-        ),
         migrations.AlterModelOptions(
             name='report',
             options={'ordering': ['-period_end_date']},
