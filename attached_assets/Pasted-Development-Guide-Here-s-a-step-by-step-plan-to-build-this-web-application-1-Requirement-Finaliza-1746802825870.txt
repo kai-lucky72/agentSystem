@@ -1,0 +1,53 @@
+Development Guide
+Here’s a step-by-step plan to build this web application:
+
+1. Requirement Finalization
+Goal: Confirm all features and workflows.
+Tasks:
+Document user stories (e.g., “As a Team Leader, I can collect reports from my Sales Agents”).
+Define acceptance criteria (e.g., “Agents can’t add clients unless attended or excused”).
+2. Database Design
+Goal: Structure a relational database to store all data.
+Schema:
+Users: user_id, work_id (unique), email, role, password (nullable), created_by (foreign key), group_id.
+Groups: group_id, team_leader_id, sales_staff_id.
+Clients: client_id, details, added_by (foreign key).
+Attendance: attendance_id, user_id, date, time, status (attended/late/excused), sector, location.
+Reports: report_id, submitted_by, submitted_to, period, content, comment, status.
+Performance: performance_id, user_id, period, metrics.
+Activity_Logs: log_id, user_id, action, timestamp.
+Notifications: notification_id, sender_id, receiver_id, message, timestamp.
+Login_Help_Requests: request_id, user_id, message, status.
+3. API Design
+Goal: Create secure, role-based APIs.
+Endpoints:
+/users: CRUD operations (role-restricted).
+/groups: Manage groups and assignments.
+/clients: Add/view clients.
+/attendance: Record/check/excuse attendance.
+/reports: Submit/view reports.
+/performance: View metrics.
+/logs: Admin-only access.
+/notifications: Send/view messages.
+/login-help: Submit/resolve requests.
+Security: Use JWT for authentication, enforce RBAC.
+4. Frontend Development
+Goal: Build role-specific interfaces.
+Components:
+Dashboards for each role (e.g., Admin: user management, Manager: performance overview).
+Forms for user creation, attendance, and reports.
+Views for reports, performance, and attendance with filters.
+Tech: React with Tailwind CSS for responsiveness.
+5. Backend Development
+Goal: Implement business logic.
+Logic:
+Attendance: Validate time frames, excuse functionality.
+Reporting: Enforce hierarchy, require comments.
+Authentication: Work ID/email login, password reset flow.
+Tech: Node.js with Express, PostgreSQL.
+6. Testing
+Goal: Ensure reliability.
+Types:
+Unit tests (e.g., API endpoints).
+Integration tests (e.g., report submission flow).
+User acceptance testing with sample data.
