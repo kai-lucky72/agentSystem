@@ -1,0 +1,315 @@
+Features to Implement
+
+1. User Management
+
+
+
+
+
+Admins create/update/delete Managers.
+
+
+
+Managers create/update/delete Sales Staff.
+
+
+
+Sales Staff create/update/delete Agents (Team Leaders, Individual Agents, Sales Agents).
+
+
+
+Assign Agents to groups (Sales Agents under Team Leaders).
+
+2. Authentication
+
+
+
+
+
+Login with work_id and email (password optional).
+
+
+
+Password reset by Admin (removes password).
+
+
+
+Login help request system for users.
+
+3. Attendance Tracking
+
+
+
+
+
+Agents record attendance with sector and location.
+
+
+
+Sales Staff set attendance time frames.
+
+
+
+Sales Staff excuse late Agents, enabling client addition.
+
+4. Client Management
+
+
+
+
+
+Agents add clients if attended or excused.
+
+
+
+Store client details and timestamp.
+
+5. Report Submission
+
+
+
+
+
+Sales Agents submit reports to Team Leaders.
+
+
+
+Individual Agents submit reports to Sales Staff.
+
+
+
+Team Leaders collect Sales Agent reports, add their own, and submit to Sales Staff.
+
+
+
+Sales Staff collect reports from Individual Agents and Team Leaders, submit to Managers.
+
+
+
+Reports include content, comment, and period (weekly, monthly, quarterly).
+
+6. Performance Tracking
+
+
+
+
+
+Store periodic metrics (weekly, monthly, quarterly) for Agents.
+
+
+
+Higher roles view Agent performance.
+
+
+
+Render performance charts using Chart.js on dashboards.
+
+7. Activity Logging
+
+
+
+
+
+Log all user actions (e.g., login, report submission) with timestamps.
+
+8. Notifications
+
+
+
+
+
+Admins send manual notifications to users.
+
+
+
+Automated reminders for attendance deadlines and pending reports.
+
+9. Data Privacy
+
+
+
+
+
+Restrict data visibility to user’s hierarchy.
+
+
+
+Deleting a user preserves their data and managed users.
+
+Development Steps
+
+1. Project Setup
+
+
+
+
+
+Initialize a React project with Tailwind CSS.
+
+
+
+Set up a Node.js/Express server.
+
+
+
+Configure PostgreSQL with the schema below.
+
+2. Database Schema
+
+
+
+
+
+Users: user_id, work_id, email, role, password, created_by, group_id.
+
+
+
+Groups: group_id, team_leader_id, sales_staff_id.
+
+
+
+Clients: client_id, details, added_by, timestamp.
+
+
+
+Attendance: attendance_id, user_id, date, time, status, sector, location.
+
+
+
+Reports: report_id, submitted_by, submitted_to, period, content, comment, status.
+
+
+
+Performance: performance_id, user_id, period, metrics.
+
+
+
+Activity_Logs: log_id, user_id, action, timestamp.
+
+
+
+Notifications: notification_id, sender_id, receiver_id, message, timestamp.
+
+
+
+Login_Help_Requests: request_id, user_id, message, status.
+
+3. Authentication
+
+
+
+
+
+Implement JWT authentication.
+
+
+
+Create /login, /logout, /reset-password endpoints.
+
+4. User Management APIs
+
+
+
+
+
+Develop /users CRUD endpoints with role-based restrictions.
+
+5. Group Management
+
+
+
+
+
+Implement /groups endpoints for creation and management.
+
+6. Attendance System
+
+
+
+
+
+Build /attendance endpoints for recording and excusing.
+
+
+
+Add time frame logic for Sales Staff.
+
+7. Client Addition
+
+
+
+
+
+Create /clients endpoints with attendance/excused validation.
+
+8. Report System
+
+
+
+
+
+Develop /reports endpoints for submission, viewing, and approval.
+
+9. Performance Metrics
+
+
+
+
+
+Implement /performance endpoint for metric storage/retrieval.
+
+
+
+Integrate Chart.js for chart rendering on dashboards.
+
+10. Activity Logging
+
+
+
+
+
+Log actions to Activity_Logs table via middleware.
+
+11. Notifications
+
+
+
+
+
+Build /notifications endpoints for manual sending.
+
+
+
+Use Node-Cron for automated reminders (attendance, reports).
+
+12. Frontend Development
+
+
+
+
+
+Create role-specific dashboards with React components.
+
+
+
+Develop forms (user creation, attendance, reports) and views (clients, reports, charts).
+
+13. Testing
+
+
+
+
+
+Write unit tests for APIs and integration tests for workflows.
+
+
+
+Conduct user acceptance testing.
+
+14. Deployment
+
+
+
+
+
+Deploy on AWS/Heroku with monitoring and logging.
