@@ -1,10 +1,16 @@
 import axios from 'axios';
 
+// Determine API URL based on environment
+const API_URL = process.env.NODE_ENV === 'production' 
+  ? '/api' 
+  : 'http://localhost:5000/api';
+
 const api = axios.create({
-  baseURL: '/api',
+  baseURL: API_URL,
   headers: {
     'Content-Type': 'application/json',
   },
+  withCredentials: true,
 });
 
 // Add token to all requests
@@ -30,7 +36,7 @@ api.interceptors.response.use(
       
       if (refreshToken) {
         try {
-          const response = await axios.post('/api/auth/token/refresh/', {
+          const response = await axios.post(`${API_URL}/token/refresh/`, {
             refresh: refreshToken,
           });
           
